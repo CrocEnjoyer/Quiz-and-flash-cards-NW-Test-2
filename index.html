@@ -81,6 +81,10 @@
       text-align: center;
       margin-top: 50px;
     }
+    #review-wrong-container {
+      margin-top: 10px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -130,6 +134,9 @@
         <button id="submit-quiz">Submit Quiz</button>
       </div>
       <div id="quiz-result" style="margin-top:15px; font-weight:bold;"></div>
+      <div id="review-wrong-container">
+        <button id="review-wrong">Review Wrong Answers Only</button>
+      </div>
       <button id="back-to-start-quiz">Back to Start</button>
     </section>
   </main>
@@ -137,27 +144,40 @@
   <script>
     // ====== DATA ======
     const flashcards = [
+      // TCP
       {question:"What type of protocol is TCP?", answer:"TCP is a connection-based protocol.", category:"TCP"},
       {question:"Is TCP reliable or unreliable?", answer:"TCP is reliable.", category:"TCP"},
       {question:"Which protocols use TCP?", answer:"HTTP, HTTPS, and FTP use TCP.", category:"TCP"},
       {question:"What type of protocol is UDP?", answer:"UDP is connectionless.", category:"UDP"},
       {question:"Which services commonly use UDP?", answer:"DNS, VoIP, video/voice streaming, online gaming use UDP.", category:"UDP"},
       {question:"What is tracking individual conversations in the transport layer?", answer:"Keeps track of multiple sessions to prevent data mixing.", category:"Transport Layer"},
+      {question:"What does segmenting data mean?", answer:"Large data streams are broken into smaller segments and reassembled correctly.", category:"Transport Layer"},
+      {question:"What is conversation multiplexing?", answer:"Allows multiple apps to send and receive data simultaneously using unique ports.", category:"Transport Layer"},
       {question:"What are the two primary addresses on a LAN device?", answer:"MAC (physical) and IP (local) addresses.", category:"LAN Addresses"},
+      {question:"Purpose of MAC address?", answer:"Used for NIC-to-NIC communication on the same network.", category:"LAN Addresses"},
+      {question:"Purpose of IP address?", answer:"Used to logically identify devices and route packets.", category:"LAN Addresses"},
       {question:"What is Cut-Through Switching?", answer:"Forwards frame immediately after reading destination MAC.", category:"Switching"},
       {question:"What is Store-and-Forward Switching?", answer:"Receives entire frame, checks for errors, then forwards.", category:"Switching"},
       {question:"What is Fast-Forward Switching?", answer:"Forwards frame immediately after reading destination MAC.", category:"Switching"},
       {question:"What is Fragment-Free Switching?", answer:"Waits for first 64 bytes before forwarding.", category:"Switching"},
       {question:"What does DHCP stand for?", answer:"Dynamic Host Configuration Protocol.", category:"DHCP"},
-      {question:"Primary purpose of SMTP?", answer:"Send emails from client to mail server or between servers.", category:"Email/ICMP/ARP"},
-      {question:"What ICMP message checks host reachability?", answer:"ICMP Echo Request.", category:"Email/ICMP/ARP"},
+      {question:"What is DHCP used for?", answer:"Automatically assigns IP addresses and network configuration.", category:"DHCP"},
+      {question:"Primary purpose of SMTP?", answer:"Send emails from client to server or between servers.", category:"Email/ICMP/ARP"},
+      {question:"What does POP usually do after downloading emails?", answer:"Typically deletes emails from the server.", category:"Email/ICMP/ARP"},
+      {question:"Purpose of ICMP?", answer:"Used for error reporting, diagnostics, and network management.", category:"Email/ICMP/ARP"},
+      {question:"ICMP message to test host reachability?", answer:"ICMP Echo Request.", category:"Email/ICMP/ARP"},
+      {question:"After sending ARP request, which device replies?", answer:"The device with the matching IP address replies with its MAC.", category:"Email/ICMP/ARP"},
       {question:"Port 20 is commonly used for which protocol?", answer:"FTP", category:"Ports"},
       {question:"Port 22 is commonly used for which protocol?", answer:"SSH", category:"Ports"},
+      {question:"Port 25 is commonly used for which protocol?", answer:"SMTP", category:"Ports"},
+      {question:"Port 67 is commonly used for which protocol?", answer:"DHCP", category:"Ports"},
       {question:"Port 80 is commonly used for which protocol?", answer:"HTTP", category:"Ports"},
+      {question:"Port 110 is commonly used for which protocol?", answer:"POP3", category:"Ports"},
+      {question:"Port 143 is commonly used for which protocol?", answer:"IMAP", category:"Ports"},
       {question:"Port 161 is commonly used for which protocol?", answer:"SNMP", category:"Ports"}
     ];
 
-    const quizQuestions = [
+    let quizQuestions = [
       {question:"Which protocol is connectionless?", options:["TCP","UDP","SMTP","HTTP"], answer:"UDP"},
       {question:"Which protocol ensures reliable delivery?", options:["TCP","UDP","ICMP","DHCP"], answer:"TCP"},
       {question:"What layer does the MAC address operate on?", options:["Layer 1","Layer 2","Layer 3","Layer 4"], answer:"Layer 2"},
@@ -166,7 +186,12 @@
       {question:"Which DHCP function is correct?", options:["Assigns MAC addresses","Assigns IP addresses","Forwards frames","Checks errors"], answer:"Assigns IP addresses"},
       {question:"Port 22 is commonly used for which protocol?", options:["FTP","SSH","SMTP","HTTP"], answer:"SSH"},
       {question:"Port 80 is commonly used for which protocol?", options:["HTTP","SMTP","SSH","POP3"], answer:"HTTP"},
-      {question:"Port 161 is commonly used for which protocol?", options:["SNMP","IMAP","SMTP","HTTP"], answer:"SNMP"}
+      {question:"Port 161 is commonly used for which protocol?", options:["SNMP","IMAP","SMTP","HTTP"], answer:"SNMP"},
+      {question:"What does TCP use to ensure reliable delivery?", options:["ACKs","Checksums","Broadcasts","Multicast"], answer:"ACKs"},
+      {question:"UDP is faster than TCP because it:", options:["Has lower latency","Checks every packet","Uses ACKs","Reorders packets"], answer:"Has lower latency"},
+      {question:"What does the transport layer use to identify applications?", options:["Port numbers","MAC addresses","IP addresses","Protocol IDs"], answer:"Port numbers"},
+      {question:"Which ICMP message checks reachability?", options:["Echo Request","Destination Unreachable","Time Exceeded","Source Quench"], answer:"Echo Request"},
+      {question:"After an ARP request, which device responds?", options:["Device with matching IP","All devices","Router","Switch"], answer:"Device with matching IP"}
     ];
 
     // ====== START SCREEN NAV ======
@@ -206,9 +231,7 @@
     const nextBtn = document.getElementById('next-card');
     const categorySelect = document.getElementById('category-select');
 
-    function shuffleArray(array) {
-      return array.sort(() => Math.random() - 0.5);
-    }
+    function shuffleArray(array) { return array.sort(() => Math.random() - 0.5); }
 
     function loadFlashcards() {
       const category = categorySelect.value;
@@ -233,49 +256,46 @@
       if(ans) ans.style.display = ans.style.display === 'block' ? 'none' : 'block';
     });
 
-    prevBtn.addEventListener('click', () => {
-      if(currentCard > 0) currentCard--;
-      displayCard();
-    });
-
-    nextBtn.addEventListener('click', () => {
-      if(currentCard < activeCards.length - 1) currentCard++;
-      displayCard();
-    });
+    prevBtn.addEventListener('click', () => { if(currentCard>0) currentCard--; displayCard(); });
+    nextBtn.addEventListener('click', () => { if(currentCard<activeCards.length-1) currentCard++; displayCard(); });
 
     // ====== QUIZ LOGIC ======
     let currentQuiz = 0;
     let activeQuiz = shuffleArray([...quizQuestions]);
+    let wrongAnswers = [];
+
     const quizDisplay = document.getElementById('quiz-display');
     const quizResult = document.getElementById('quiz-result');
 
-    function loadQuiz() {
-      displayQuiz();
-    }
+    function loadQuiz() { displayQuiz(); }
 
     function displayQuiz() {
+      if(activeQuiz.length===0){ quizDisplay.innerHTML="No quiz questions available."; return; }
       const q = activeQuiz[currentQuiz];
       quizDisplay.innerHTML = `<p>${currentQuiz+1}. ${q.question}</p>` +
         q.options.map(opt => `<label><input type="radio" name="q${currentQuiz}" value="${opt}"> ${opt}</label>`).join('');
     }
 
-    document.getElementById('next-quiz').addEventListener('click', () => {
-      if(currentQuiz < activeQuiz.length - 1) currentQuiz++;
-      displayQuiz();
-    });
-
-    document.getElementById('prev-quiz').addEventListener('click', () => {
-      if(currentQuiz > 0) currentQuiz--;
-      displayQuiz();
-    });
+    document.getElementById('next-quiz').addEventListener('click', () => { if(currentQuiz<activeQuiz.length-1) currentQuiz++; displayQuiz(); });
+    document.getElementById('prev-quiz').addEventListener('click', () => { if(currentQuiz>0) currentQuiz--; displayQuiz(); });
 
     document.getElementById('submit-quiz').addEventListener('click', () => {
+      wrongAnswers = [];
       let score = 0;
       activeQuiz.forEach((q,i) => {
         const selected = document.querySelector(`input[name="q${i}"]:checked`);
-        if(selected && selected.value === q.answer) score++;
+        if(selected && selected.value === q.answer) score++; else wrongAnswers.push(q);
       });
       quizResult.textContent = `You scored ${score} out of ${activeQuiz.length}`;
+    });
+
+    document.getElementById('review-wrong').addEventListener('click', () => {
+      if(wrongAnswers.length===0){ alert("No wrong answers to review!"); return; }
+      activeQuiz = [...wrongAnswers];
+      wrongAnswers = [];
+      currentQuiz = 0;
+      displayQuiz();
+      quizResult.textContent="";
     });
   </script>
 </body>
