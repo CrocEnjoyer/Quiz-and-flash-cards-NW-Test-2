@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Networking Flashcards & Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+    }
+    header {
+      background: #007acc;
+      color: white;
+      padding: 20px 0;
+      text-align: center;
+    }
+    main {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+    section {
+      margin-bottom: 40px;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .flashcard {
+      background: #e0f7fa;
+      border: 1px solid #007acc;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 10px 0;
+      cursor: pointer;
+      min-height: 80px;
+    }
+    .flashcard p.answer {
+      display: none;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    button {
+      background: #007acc;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #005f99;
+    }
+    .quiz-question {
+      margin: 15px 0;
+    }
+    .quiz-question label {
+      display: block;
+      margin: 5px 0;
+    }
+    .flashcard-nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Networking Flashcards & Quiz</h1>
+  </header>
+
+  <main>
+    <!-- Flashcards Section -->
+    <section id="flashcards-section">
+      <h2>Flashcards</h2>
+      <div id="flashcard-display" class="flashcard"></div>
+      <div class="flashcard-nav">
+        <button id="prev-card">Previous</button>
+        <button id="show-answer">Show Answer</button>
+        <button id="next-card">Next</button>
+      </div>
+    </section>
+
+    <!-- Quiz Section -->
+    <section id="quiz-section">
+      <h2>Quiz</h2>
+      <div id="quiz-container"></div>
+      <button id="submit-quiz">Submit Quiz</button>
+      <div id="quiz-result"></div>
+    </section>
+  </main>
+
+  <script>
+    // ======= FLASHCARDS DATA =======
+    const flashcards = [
+      // TCP
+      {question: "What type of protocol is TCP?", answer: "TCP is a connection-based protocol, meaning a connection must be established before data transfer."},
+      {question: "Is TCP reliable or unreliable?", answer: "TCP is reliable; it uses acknowledgements, sequence numbers, and retransmissions."},
+      {question: "How does TCP ensure error checking?", answer: "TCP ensures data integrity and correct order delivery."},
+      {question: "What control mechanisms does TCP use?", answer: "TCP uses flow and congestion control to manage data efficiently."},
+      {question: "What type of communication does TCP support?", answer: "TCP supports unicast (one-to-one) communication."},
+      {question: "Is TCP fast or slow compared to UDP?", answer: "TCP is slower due to connection management and reliability features."},
+      {question: "Which protocols use TCP?", answer: "HTTP, HTTPS, and FTP use TCP."},
+
+      // UDP
+      {question: "What type of protocol is UDP?", answer: "UDP is connectionless; data is sent directly without establishing a connection."},
+      {question: "Is UDP reliable or unreliable?", answer: "UDP is unreliable; packets may be lost or arrive out of order."},
+      {question: "How does UDP handle error checking?", answer: "UDP uses basic checksum for minimal error checking."},
+      {question: "Does UDP use flow or congestion control?", answer: "UDP has no flow or congestion control."},
+      {question: "What communication types does UDP support?", answer: "UDP supports unicast, broadcast, and multicast."},
+      {question: "Is UDP faster or slower than TCP?", answer: "UDP is faster and has lower latency."},
+      {question: "Which services commonly use UDP?", answer: "DNS, VoIP, video/voice streaming, and online gaming use UDP."},
+
+      // Transport Layer
+      {question: "What is tracking individual conversations in the transport layer?", answer: "The transport layer keeps track of multiple communication sessions to prevent data mixing."},
+      {question: "What does segmenting data and reassembling segments mean?", answer: "Large data streams are broken into smaller segments and reassembled correctly."},
+      {question: "What is adding header information?", answer: "Each segment gets a header including source/destination ports, sequence numbers, and error-checking info."},
+      {question: "How does the transport layer identify applications?", answer: "It uses port numbers to identify which application or service the data belongs to."},
+      {question: "What is conversation multiplexing?", answer: "It allows multiple applications to send and receive data simultaneously using unique ports."},
+
+      // LAN addresses
+      {question: "What are the two primary addresses on a LAN device?", answer: "MAC address (physical) and IP address (local)."},
+      {question: "What is the purpose of the MAC address?", answer: "Used for NIC-to-NIC communication on the same network."},
+      {question: "What layer does the MAC address operate on?", answer: "Layer 2 – Data Link Layer."},
+      {question: "What is the purpose of the IP address?", answer: "Identifies devices logically and is used to send packets to destinations."},
+      {question: "What layer does the IP address operate on?", answer: "Layer 3 – Network Layer."},
+      {question: "Which address delivers the data link frame?", answer: "The Layer 2 physical (MAC) address."},
+
+      // Switching
+      {question: "What is Cut-Through Switching?", answer: "Forwards frame immediately after reading destination MAC."},
+      {question: "What is Store-and-Forward Switching?", answer: "Receives entire frame, checks for errors, then forwards it."},
+      {question: "What is Fast-Forward Switching?", answer: "Forwards frame immediately after reading destination MAC; very low latency."},
+      {question: "What is Fragment-Free Switching?", answer: "Waits for first 64 bytes before forwarding to avoid collision fragments."},
+
+      // DHCP
+      {question: "What does DHCP stand for?", answer: "Dynamic Host Configuration Protocol."},
+      {question: "What is DHCP?", answer: "Automatically assigns IP addresses and network configuration to devices."},
+      {question: "Why is DHCP useful?", answer: "Prevents IP conflicts and reduces manual network setup."},
+
+      // Email, ICMP, ARP
+      {question: "Primary purpose of SMTP?", answer: "Send emails from client to mail server or between servers."},
+      {question: "What does POP usually do after downloading emails?", answer: "Typically deletes emails from the server."},
+      {question: "Purpose of ICMP?", answer: "Used for error reporting, diagnostics, and network management."},
+      {question: "ICMP message to test host reachability?", answer: "ICMP Echo Request; replies with Echo Reply."},
+      {question: "After sending ARP request, which device replies?", answer: "The device with the matching IP address replies with its MAC address."},
+
+      // Port Numbers
+      {question: "Port 20 is commonly used for which protocol?", answer: "FTP (File Transfer Protocol)"},
+      {question: "Port 22 is commonly used for which protocol?", answer: "SSH (Secure Shell)"},
+      {question: "Port 25 is commonly used for which protocol?", answer: "SMTP (Simple Mail Transfer Protocol)"},
+      {question: "Port 67 is commonly used for which protocol?", answer: "DHCP (Dynamic Host Configuration Protocol)"},
+      {question: "Port 80 is commonly used for which protocol?", answer: "HTTP (Hypertext Transfer Protocol)"},
+      {question: "Port 110 is commonly used for which protocol?", answer: "POP3 (Post Office Protocol 3)"},
+      {question: "Port 143 is commonly used for which protocol?", answer: "IMAP (Internet Message Access Protocol)"},
+      {question: "Port 161 is commonly used for which protocol?", answer: "SNMP (Simple Network Management Protocol)"}
+    ];
+
+    // Flashcard Navigation
+    let currentCard = 0;
+    const flashcardDisplay = document.getElementById('flashcard-display');
+    const showAnswerBtn = document.getElementById('show-answer');
+    const prevBtn = document.getElementById('prev-card');
+    const nextBtn = document.getElementById('next-card');
+
+    function displayCard(index) {
+      flashcardDisplay.innerHTML = `<p class="question">${flashcards[index].question}</p>
+                                    <p class="answer" id="answer">${flashcards[index].answer}</p>`;
+    }
+
+    showAnswerBtn.addEventListener('click', () => {
+      const ans = document.getElementById('answer');
+      ans.style.display = ans.style.display === 'block' ? 'none' : 'block';
+    });
+
+    prevBtn.addEventListener('click', () => {
+      if(currentCard > 0) currentCard--;
+      displayCard(currentCard);
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if(currentCard < flashcards.length - 1) currentCard++;
+      displayCard(currentCard);
+    });
+
+    // Display first card initially
+    displayCard(currentCard);
+
+    // ======= QUIZ DATA =======
+    const quizQuestions = [
+      {question: "Which protocol is connectionless?", options: ["TCP", "UDP", "SMTP", "HTTP"], answer: "UDP"},
+      {question: "Which protocol ensures reliable delivery?", options: ["TCP", "UDP", "ICMP", "DHCP"], answer: "TCP"},
+      {question: "What layer does the MAC address operate on?", options: ["Layer 1", "Layer 2", "Layer 3", "Layer 4"], answer: "Layer 2"},
+      {question: "What layer does the IP address operate on?", options: ["Layer 1", "Layer 2", "Layer 3", "Layer 4"], answer: "Layer 3"},
+      {question: "Which switching method checks the entire frame before forwarding?", options: ["Cut-Through", "Fast-Forward", "Store-and-Forward", "Fragment-Free"], answer: "Store-and-Forward"},
+      {question: "Which DHCP function is correct?", options: ["Assigns MAC addresses", "Assigns IP addresses", "Forwards frames", "Checks errors"], answer: "Assigns IP addresses"},
+      {question: "What ICMP message checks host reachability?", options: ["Echo Request", "Destination Unreachable", "Time Exceeded", "Source Quench"], answer: "Echo Request"},
+      {question: "What does POP usually do after downloading emails?", options: ["Keeps on server", "Deletes from server", "Forwards to another server", "Ignores emails"], answer: "Deletes from server"},
+      {question: "Fragment-Free switching waits for how many bytes before forwarding?", options: ["64 bytes", "128 bytes", "Entire frame", "6 bytes"], answer: "64 bytes"},
+      {question: "Port 22 is commonly used for which protocol?", options: ["FTP", "SSH", "SMTP", "HTTP"], answer: "SSH"},
+      {question: "Port 80 is commonly used for which protocol?", options: ["HTTP", "SMTP", "SSH", "POP3"], answer: "HTTP"},
+      {question: "Port 161 is commonly used for which protocol?", options: ["SNMP", "IMAP", "SMTP", "HTTP"], answer: "SNMP"}
+    ];
+
+    // Render Quiz
+    const quizContainer = document.getElementById('quiz-container');
+    quizQuestions.forEach((q, i) => {
+      const div = document.createElement('div');
+      div.className = 'quiz-question';
+      div.innerHTML = `<p>${i + 1}. ${q.question}</p>` +
+                      q.options.map(opt => 
+                        `<label>
+                          <input type="radio" name="q${i}" value="${opt}"> ${opt}
+                        </label>`).join('');
+      quizContainer.appendChild(div);
+    });
+
+    // Quiz Submission
+    document.getElementById('submit-quiz').addEventListener('click', () => {
+      let score = 0;
+      quizQuestions.forEach((q, i) => {
+        const selected = document.querySelector(`input[name="q${i}"]:checked`);
+        if(selected && selected.value === q.answer) score++;
+      });
+      document.getElementById('quiz-result').textContent = `You scored ${score} out of ${quizQuestions.length}`;
+    });
+  </script>
+</body>
+</html>
